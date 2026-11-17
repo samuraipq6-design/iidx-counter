@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10151d">
+  <meta name="description" content="IIDXの曲別練習回数を記録するシンプルなカウンター">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon-192.png">
+  <title>IIDX 練習カウンター</title>
+  <style>
+    :root {color-scheme:dark; --bg:#0b1017;--surface:#151d29;--surface2:#1b2634;--line:#2b3849;--text:#f4f7fb;--sub:#9eaec0;--accent:#93e3b5;--accent2:#c3f9d8;--danger:#ff8b91;--r:17px}
+    * {box-sizing:border-box}
+    html{min-height:100%; background:var(--bg)}
+    body{margin:0;color:var(--text);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:radial-gradient(circle at 100% 0%,#142636 0,transparent 380px),var(--bg);min-height:100vh;-webkit-tap-highlight-color:transparent}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer;touch-action:manipulation}
+    button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .container{max-width:1000px;margin:auto;padding:env(safe-area-inset-top) 15px calc(38px + env(safe-area-inset-bottom))}
+    .masthead{padding:26px 2px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .eyebrow{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.16em;margin:0 0 5px}
+    h1{font-size:clamp(20px,5vw,28px);line-height:1.15;margin:0;font-weight:850;letter-spacing:-.04em}
+    .top-tools{display:flex;gap:7px}
+    .icon-button{background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:12px;width:42px;height:42px;font-size:19px;display:grid;place-items:center}
+    .top-tools button:active,.soft:active{transform:scale(.96)}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:17px 0 17px}
+    .stat{background:#131d28;border:1px solid #263748;border-radius:14px;padding:13px 12px 12px;min-width:0}
+    .stat .lbl{color:var(--sub);font-size:11px;margin:0 0 5px}
+    .stat .num{font-size:clamp(22px,5.8vw,30px);line-height:1.1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.045em;white-space:nowrap}
+    .toolbar{display:flex;gap:9px;align-items:center;margin-bottom:13px}
+    .search{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--text);padding:12px 12px;font-size:14px}
+    .search::placeholder{color:#8193a5}
+    .primary{background:var(--accent);color:#101b1d;font-weight:800;border:0;border-radius:12px;padding:12px 14px;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.15)}
+    .primary:active{background:var(--accent2);transform:translateY(1px)}
+    .headerline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 11px}
+    .sectiontitle{font-size:13px;font-weight:750;color:#becddd}
+    .view-controls{display:flex;gap:7px;align-items:center}
+    .view-controls label{color:var(--sub);font-size:12px}
+    select{background:var(--surface);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:7px 8px;font-size:12px}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+    .cards.one{grid-template-columns:1fr}
+    .cards.compact .card{min-height:177px;padding:10px 9px;border-radius:13px}
+    .cards.compact .card-head{min-height:26px}
+    .cards.compact .song{font-size:12px;white-space:nowrap;display:block;text-overflow:ellipsis;overflow:hidden}
+    .cards.compact .mini-metadata{font-size:10px;min-height:30px;gap:1px}
+    .cards.compact .count-btn{min-height:57px;margin:7px 0 4px}
+    .cards.compact .count-btn .big{font-size:29px}
+    .cards.compact .progress-row{height:13px;font-size:10px}
+    .cards.compact .card-bottom{margin-top:7px}
+    .cards.compact .decrement{padding:5px 9px;min-width:43px}
+    .card{position:relative;display:flex;flex-direction:column;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px 12px 12px;min-height:223px;overflow:hidden}
+    .card.done{border-color:#3b7761}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:4px;min-height:42px}
+    .song{font-size:14px;line-height:1.45;font-weight:800;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .edit{height:28px;width:31px;flex-shrink:0;color:#becddd;background:transparent;border:0;border-radius:8px;font-size:20px;line-height:1;display:grid;place-items:center}
+    .edit:active{background:#263647}
+    .mini-metadata{font-size:11px;color:var(--sub);min-height:36px;display:flex;flex-direction:column;gap:3px;margin-top:2px;overflow:hidden}
+    .mini-metadata div{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+    .mini-metadata .score{color:#d0dded}
+    .count-btn{position:relative;border:1px solid #496f66;border-radius:13px;background:linear-gradient(160deg,#254d48,#1b353b);color:var(--text);min-height:78px;margin:11px 0 6px;display:flex;align-items:center;justify-content:center;gap:9px;flex:1;overflow:hidden;user-select:none;-webkit-user-select:none}
+    .count-btn:active{background:#31695a;transform:scale(.986)}
+    .count-btn .big{font-size:clamp(29px,8vw,42px);font-weight:850;letter-spacing:-.05em;font-variant-numeric:tabular-nums;line-height:1}
+    .count-btn .plus{font-size:18px;color:var(--accent);font-weight:850;align-self:center}
+    .count-btn::after{position:absolute;content:"";inset:0;background:radial-gradient(circle,rgba(147,227,181,.17),transparent 65%);opacity:0;pointer-events:none}
+    .count-btn.flash::after{animation:flash .3s ease-out}
+    @keyframes flash{0%{opacity:1;transform:scale(.6)}100%{opacity:0;transform:scale(1.2)}}
+    .progress-row{height:15px;font-size:11px;color:var(--sub);display:flex;justify-content:space-between;gap:4px;margin:2px 0 4px;align-items:center}
+    .progress-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .progress{height:5px;background:#2b3949;border-radius:20px;overflow:hidden}
+    .progress > div{height:100%;background:var(--accent);border-radius:20px;transition:width .16s}
+    .card-bottom{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:10px}
+    .card-bottom small{color:#8294a7;font-size:10px}
+    .decrement{color:#bbcbdc;border:1px solid #354458;background:#1b2838;border-radius:9px;padding:6px 11px;min-width:49px;font-size:12px;font-weight:750}
+    .decrement:disabled{opacity:.35;cursor:not-allowed}
+    .empty{border:1px dashed #3b4b5b;border-radius:17px;padding:38px 22px;text-align:center;color:#9fafbf;grid-column:1/-1;background:#131c27}
+    .empty strong{display:block;color:#e4edf5;font-size:16px;margin-bottom:8px}
+    .empty p{font-size:13px;margin:0;line-height:1.7}
+    dialog{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;border:1px solid #3c5063;border-radius:20px;background:#15202e;color:var(--text);max-width:480px;width:calc(100% - 28px);max-height:min(90dvh,800px);padding:0;box-shadow:0 25px 75px rgba(0,0,0,.6);overflow:auto}
+    dialog::backdrop{background:rgba(3,8,14,.78);backdrop-filter:blur(3px)}
+    .dialog-inner{padding:21px}
+    .dialog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px}
+    .dialog-head h2{font-size:19px;margin:0}
+    .close{border:none;background:transparent;color:var(--sub);font-size:24px;width:28px;height:28px}
+    .field{margin:0 0 12px}
+    .field label{display:block;color:#c2d0df;font-size:12px;margin:0 0 6px;font-weight:650}
+    .field input,.field textarea{display:block;background:#0f1722;border:1px solid #3a4b5d;border-radius:10px;color:var(--text);padding:11px 12px;width:100%;font-size:15px;outline:none}
+    .field input:focus,.field textarea:focus{border-color:var(--accent)}
+    .field textarea{resize:vertical;min-height:69px}
+    .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .hint{color:#879bac;font-size:11px;line-height:1.6;margin:-4px 0 13px}
+    .dialog-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:15px}
+    .soft{background:#233245;color:#ecf3fa;border:1px solid #415268;padding:11px 14px;border-radius:10px;font-weight:700}
+    .danger{color:var(--danger);border:0;background:transparent;padding:10px 6px;font-size:12px;margin-right:auto}
+    .settings-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 3px}
+    .settings-actions button{flex:1}
+    .subtle{font-size:12px;color:var(--sub);line-height:1.75}
+    footer{font-size:11px;color:#6f8093;padding:24px 2px;text-align:center;line-height:1.6}
+    .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(15px);background:#d6f7e4;color:#1a3329;border-radius:10px;padding:9px 14px;font-size:12px;font-weight:750;opacity:0;transition:opacity .17s,transform .17s;pointer-events:none;z-index:10;max-width:calc(100vw - 30px);text-align:center;white-space:nowrap}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media (min-width:700px){.cards.compact{grid-template-columns:repeat(4,minmax(0,1fr))}.container{padding-left:24px;padding-right:24px}.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.cards.one{grid-template-columns:1fr}.card{min-height:242px;padding:16px}.song{font-size:16px}.count-btn .big{font-size:42px}}
+    @media (max-width:360px){.container{padding-left:10px;padding-right:10px}.cards{gap:7px}.card{padding:10px 9px}.song{font-size:12px}.count-btn .big{font-size:28px}.stat{padding:11px 9px}}
+    @media (prefers-reduced-motion:reduce){*,*:after{animation:none!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="masthead">
+      <div><p class="eyebrow">PRACTICE TRACKER</p><h1>IIDX 練習カウンター</h1></div>
+      <div class="top-tools"><button id="settingsBtn" class="icon-button" aria-label="データのバックアップと設定" title="データ管理">⚙</button></div>
+    </header>
+    <section class="stats" aria-label="集計">
+      <div class="stat"><div class="lbl">登録曲数</div><div class="num" id="songStat">0</div></div>
+      <div class="stat"><div class="lbl">今日の練習</div><div class="num" id="todayStat">0</div></div>
+      <div class="stat"><div class="lbl">累計カウント</div><div class="num" id="totalStat">0</div></div>
+    </section>
+    <div class="toolbar">
+      <input class="search" id="search" type="search" placeholder="曲名で検索" aria-label="曲名で検索" autocomplete="off">
+      <button class="primary" id="addBtn">＋ 曲を追加</button>
+    </div>
+    <div class="headerline">
+      <span id="showing" class="sectiontitle">練習曲</span>
+      <div class="view-controls"><label for="columns">表示</label><select id="columns"><option value="compact">コンパクト</option><option value="grid">通常の複数列</option><option value="one">1列</option></select></div>
+    </div>
+    <section id="cards" class="cards" aria-label="曲ごとのカウンター" aria-live="off"></section>
+    <footer>＋1を押すたびに自動保存 ｜ 日付別の練習回数も記録<br>機種変更前は ⚙ からバックアップしてください</footer>
+  </main>
+
+  <dialog id="songDialog" aria-labelledby="dialogTitle">
+    <form id="songForm" class="dialog-inner">
+      <div class="dialog-head"><h2 id="dialogTitle">曲を追加</h2><button class="close" type="button" data-close="songDialog" aria-label="閉じる">×</button></div>
+      <div class="field"><label for="nameField">曲名 <span aria-hidden="true">*</span></label><input id="nameField" name="name" required maxlength="130" placeholder="例：SPECIAL SUMMER CAMPAIGN!" autocomplete="off"></div>
+      <div class="pair">
+        <div class="field"><label for="goalField">目標回数</label><input id="goalField" name="goal" type="number" min="1" step="1" max="999999" inputmode="numeric" placeholder="例：30"></div>
+        <div class="field"><label for="dateField">日付（任意）</label><input id="dateField" name="date" type="date"></div>
+      </div>
+      <div class="field"><label for="scoreField">スコア（自由入力）</label><input id="scoreField" name="score" maxlength="180" placeholder="例：EX 2450 / BP 78 / ノマゲ"></div>
+      <div class="field"><label for="memoField">メモ</label><textarea id="memoField" name="memo" maxlength="1500" placeholder="例：皿地帯を重点的に。目標は週3回。"></textarea></div>
+      <p class="hint">カウントは曲の大きな数字をタップして＋1します。日付とスコアはいつでも編集できます。</p>
+      <div class="dialog-actions"><button type="button" class="danger" id="deleteBtn" hidden>この曲を削除</button><button type="button" class="soft" data-close="songDialog">キャンセル</button><button type="submit" class="primary">保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <div class="dialog-inner">
+      <div class="dialog-head"><h2 id="settingsTitle">データ管理</h2><button class="close" type="button" data-close="settingsDialog" aria-label="閉じる">×</button></div>
+      <p class="subtle">このアプリの記録は使用中のブラウザ内に自動保存されます。ブラウザのデータ削除や端末変更で失われる可能性があるため、定期的にバックアップしてください。</p>
+      <div class="settings-actions"><button class="primary" id="exportBtn">↓ JSON書き出し</button><button class="soft" id="importBtn">↑ JSON読み込み</button></div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <p class="subtle">読み込みは現在のデータと置き換えます。カウント履歴、目標、日付、スコア、メモをまとめて保存できます。</p>
+      <div class="dialog-actions"><button type="button" class="soft" data-close="settingsDialog">閉じる</button></div>
+    </div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    'use strict';
+    const KEY='iidx-practice-counter.v1';
+    const VIEW_KEY='iidx-practice-counter.view';
+    const $=id=>document.getElementById(id);
+    let tracks=[],editingId=null,toastTimer=null;
+    let storageAvailable=true;
+    function dateLocal(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`;}
+    function id(){return typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(36).slice(2);}
+    function escapeHTML(str){return String(str??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function fmt(n){return Number(n||0).toLocaleString('ja-JP');}
+    function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);}
+    function normalize(t){
+      if(!t||typeof t!=='object'||typeof t.title!=='string'||!t.title.trim())return null;
+      const count=Math.max(0,Math.min(9999999,Number.isFinite(Number(t.count))?Math.floor(Number(t.count)):0));
+      const goal=t.goal===null||t.goal===undefined||t.goal===''?null:Math.max(1,Math.min(999999,Math.floor(Number(t.goal)||1)));
+      return {id:typeof t.id==='string'&&t.id?t.id:id(),title:t.title.trim().slice(0,130),count,goal,date:typeof t.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(t.date)?t.date:'',score:String(t.score??'').slice(0,180),memo:String(t.memo??'').slice(0,1500),createdAt:Number(t.createdAt)||Date.now(),updatedAt:Number(t.updatedAt)||Date.now(),events:Array.isArray(t.events)?t.events.slice(-100000).filter(e=>e&&Number.isFinite(Number(e.at))&&(e.delta===1||e.delta===-1)).map(e=>({at:Number(e.at),delta:e.delta})):[]};
+    }
+    function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'[]');tracks=Array.isArray(data)?data.slice(0,1000).map(normalize).filter(Boolean):[];}catch(e){tracks=[];toast('保存データを読み込めませんでした');}}
+    function save(){try{localStorage.setItem(KEY,JSON.stringify(tracks));storageAvailable=true;return true;}catch(e){storageAvailable=false;toast('保存に失敗しました。⚙からバックアップしてください');return false;}}
+    function renderStats(){
+      const today=dateLocal();$('songStat').textContent=fmt(tracks.length);
+      $('totalStat').textContent=fmt(tracks.reduce((s,t)=>s+t.count,0));
+      $('todayStat').textContent=fmt(Math.max(0,tracks.reduce((s,t)=>s+t.events.reduce((v,e)=>dateLocal(new Date(e.at))===today?v+e.delta:v,0),0)));
+    }
+    function renderCards(){
+      const list=$('cards');const q=$('search').value.trim().toLocaleLowerCase();
+      const shown=tracks.filter(t=>t.title.toLocaleLowerCase().includes(q));
+      $('showing').textContent='練習曲　'+shown.length+' / '+tracks.length;
+      list.className='cards'+($('columns').value==='one'?' one':$('columns').value==='compact'?' compact':'');
+      if(!shown.length){list.innerHTML=`<div class="empty"><strong>${q?'一致する曲がありません':'練習曲を登録しよう'}</strong><p>${q?'検索する曲名を変更してください':'「＋ 曲を追加」から曲名を登録すると、ここにカウンターが並びます。'}</p></div>`;return;}
+      list.innerHTML=shown.map(t=>{
+        const progress=t.goal?Math.min(100,t.count/t.goal*100):0;
+        const done=t.goal&&t.count>=t.goal;
+        const goalTxt=t.goal?`${fmt(t.count)} / ${fmt(t.goal)} 回`:'目標回数：未設定';
+        const caption=t.date?`<div>📅 ${escapeHTML(t.date)}</div>`:'<div>日付：未設定</div>';
+        const score=t.score?`<div class="score" title="${escapeHTML(t.score)}">スコア：${escapeHTML(t.score)}</div>`:'<div>スコア：未設定</div>';
+        const memo=t.memo?`<div title="${escapeHTML(t.memo)}">📝 ${escapeHTML(t.memo)}</div>`:'';
+        return `<article class="card ${done?'done':''}" data-id="${escapeHTML(t.id)}">
+          <div class="card-head"><div class="song" title="${escapeHTML(t.title)}">${escapeHTML(t.title)}</div><button class="edit" type="button" data-action="edit" aria-label="${escapeHTML(t.title)}の詳細を編集" title="編集">⋯</button></div>
+          <div class="mini-metadata">${caption}${score}${memo}</div>
+          <button type="button" class="count-btn" data-action="plus" aria-label="${escapeHTML(t.title)}の練習を1回追加"><span class="big">${fmt(t.count)}</span><span class="plus">＋1</span></button>
+          <div class="progress-row"><span>${goalTxt}</span><span>${done?'達成！':t.goal?Math.round(progress)+'%':''}</span></div>
+          <div class="progress"><div style="width:${progress}%"></div></div>
+          <div class="card-bottom"><small>タップでカウント</small><button type="button" class="decrement" data-action="minus" ${t.count===0?'disabled':''} aria-label="${escapeHTML(t.title)}のカウントを1減らす">−1</button></div>
+        </article>`;
+      }).join('');
+    }
+    function render(){renderStats();renderCards();}
+    function count(id,delta){
+      const t=tracks.find(x=>x.id===id);if(!t)return;
+      if(delta<0&&t.count===0)return;
+      if(delta>0&&t.count>=9999999){toast('カウントの上限に達しました');return;}
+      t.count+=delta;t.updatedAt=Date.now();t.events.push({at:Date.now(),delta});
+      if(t.events.length>100000)t.events=t.events.slice(-100000);
+      save();render();
+      if(delta>0&&navigator.vibrate)navigator.vibrate(6);
+    }
+    function openTrack(t=null){
+      editingId=t?.id??null;
+      $('dialogTitle').textContent=t?'曲の詳細を編集':'曲を追加';
+      $('nameField').value=t?.title??'';
+      $('goalField').value=t?.goal??'';
+      $('dateField').value=t?.date??'';
+      $('scoreField').value=t?.score??'';
+      $('memoField').value=t?.memo??'';
+      $('deleteBtn').hidden=!t;
+      $('songDialog').showModal();
+    }
+    $('cards').addEventListener('click',e=>{
+      const btn=e.target.closest('button[data-action]');if(!btn)return;
+      const card=btn.closest('.card');if(!card)return;
+      const t=tracks.find(x=>x.id===card.dataset.id);if(!t)return;
+      if(btn.dataset.action==='edit')openTrack(t);
+      if(btn.dataset.action==='plus')count(t.id,1);
+      if(btn.dataset.action==='minus')count(t.id,-1);
+    });
+    $('songForm').addEventListener('submit',e=>{
+      e.preventDefault();
+      const title=$('nameField').value.trim();if(!title){$('nameField').focus();return;}
+      const goalValue=$('goalField').value;
+      const obj={title,goal:goalValue?Math.max(1,Math.floor(Number(goalValue))):null,date:$('dateField').value,score:$('scoreField').value.trim(),memo:$('memoField').value.trim()};
+      if(editingId){const t=tracks.find(x=>x.id===editingId);if(t)Object.assign(t,obj,{updatedAt:Date.now()});}
+      else tracks.push({id:id(),...obj,count:0,createdAt:Date.now(),updatedAt:Date.now(),events:[]});
+      save();$('songDialog').close();render();toast(editingId?'更新しました':'曲を追加しました');
+    });
+    $('deleteBtn').addEventListener('click',()=>{
+      if(!editingId)return;const t=tracks.find(x=>x.id===editingId);
+      if(!confirm(`「${t?.title||'この曲'}」を削除しますか？\nカウント履歴も削除されます。`))return;
+      tracks=tracks.filter(x=>x.id!==editingId);save();$('songDialog').close();render();toast('削除しました');
+    });
+    document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).close()));
+    $('songDialog').addEventListener('click',e=>{if(e.target===$('songDialog'))$('songDialog').close();});
+    $('settingsDialog').addEventListener('click',e=>{if(e.target===$('settingsDialog'))$('settingsDialog').close();});
+    $('addBtn').addEventListener('click',()=>openTrack());
+    $('settingsBtn').addEventListener('click',()=>$('settingsDialog').showModal());
+    $('search').addEventListener('input',renderCards);
+    $('columns').addEventListener('change',()=>{try{localStorage.setItem(VIEW_KEY,$('columns').value);}catch(e){}renderCards();});
+    $('exportBtn').addEventListener('click',()=>{
+      const payload={app:'iidx-practice-counter',version:1,exportedAt:new Date().toISOString(),tracks};
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`iidx-practice-${dateLocal()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('バックアップを書き出しました');
+    });
+    $('importBtn').addEventListener('click',()=>$('importFile').click());
+    $('importFile').addEventListener('change',async e=>{
+      const file=e.target.files?.[0];if(!file)return;
+      try{
+        if(file.size>12*1024*1024)throw new Error('ファイルが大きすぎます');
+        const p=JSON.parse(await file.text());
+        if(p?.app!=='iidx-practice-counter'||!Array.isArray(p.tracks))throw new Error('このアプリのバックアップではありません');
+        if(p.tracks.length>1000)throw new Error('登録曲数が多すぎます');
+        const parsed=p.tracks.map(normalize);
+        if(parsed.some(x=>!x))throw new Error('曲データの形式が不正です');
+        if(!confirm(`${parsed.length}曲を読み込み、現在の${tracks.length}曲をすべて置き換えます。続行しますか？`))return;
+        tracks=parsed;save();$('settingsDialog').close();render();toast('バックアップを復元しました');
+      }catch(err){alert('読み込みに失敗しました：'+err.message);}finally{e.target.value='';}
+    });
+    try{const v=localStorage.getItem(VIEW_KEY);$('columns').value=['compact','grid','one'].includes(v)?v:'compact';}catch(e){$('columns').value='compact';}
+    load();render();
+    if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  </script>
+</body>
+</html>
